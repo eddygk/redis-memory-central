@@ -120,7 +120,11 @@ Access the services:
 Run comprehensive tests:
 
 ```bash
-python3 scripts/client/test-connection.py
+# Install test dependencies
+pip install -r tests/requirements.txt
+
+# Run the integration test suite
+pytest
 ```
 
 ### 6. Configure Clients
@@ -206,11 +210,14 @@ scrape_configs:
 
 ### 2. Configure Backups
 
-The backup script runs automatically at 2 AM. To run manually:
+Backups are now handled automatically by the dedicated backup container in docker-compose.yml. The backup service:
+- Runs daily at 3:00 AM
+- Backs up the Redis data volume
+- Stores backups in `/opt/redis-memory/backups` on the LXC container
+- Keeps the last 7 daily backups (automatic cleanup)
+- Uses tar.gz compression
 
-```bash
-pct exec 850 -- /opt/redis-memory/backup.sh
-```
+No manual configuration is required - the backup service starts automatically with the other containers.
 
 ### 3. Set Up Alerts
 
@@ -353,7 +360,7 @@ git pull
 ### Clean Up Old Data
 
 ```bash
-# Remove old backups
+# Clean up old backups (if needed - normally handled automatically)
 find /opt/redis-memory/backups -name "*.tar.gz" -mtime +30 -delete
 
 # Compact Redis
@@ -397,6 +404,6 @@ See [SCALING.md](SCALING.md) for detailed instructions.
 ## Support
 
 - Check logs: `/var/log/redis-memory/`
-- Run health check: `./scripts/maintenance/health-check.sh`
-- Test connection: `python3 ./scripts/client/test-connection.py`
+- Check Prometheus alerts: `http://10.10.20.85:9090/alerts`
+- Test connection: `pytest` (after installing test dependencies)
 - GitHub Issues: https://github.com/eddygk/redis-memory-central/issues

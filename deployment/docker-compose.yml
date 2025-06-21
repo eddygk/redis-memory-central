@@ -128,7 +128,18 @@ services:
     networks:
       - redis_memory_net
 
-  # Optional monitoring
+  # Add this new service for Redis metrics
+  redis-exporter:
+    image: oliver006/redis_exporter:latest
+    container_name: redis-memory-exporter
+    restart: unless-stopped
+    depends_on:
+      - redis
+    environment:
+      - REDIS_ADDR=redis:6379
+    networks:
+      - redis_memory_net
+
   prometheus:
     image: prom/prometheus:latest
     container_name: redis-memory-prometheus
@@ -137,10 +148,37 @@ services:
       - "9090:9090"
     volumes:
       - ./configs/prometheus.yml:/etc/prometheus/prometheus.yml
+      - ./configs/alerts.yml:/etc/prometheus/alerts.yml # Add this line
       - prometheus_data:/prometheus
     command:
       - '--config.file=/etc/prometheus/prometheus.yml'
       - '--storage.tsdb.path=/prometheus'
+    networks:
+      - redis_memory_net
+
+  backup:
+    image: offen/docker-volume-backup:v2-latest
+    container_name: redis-memory-backup
+    restart: unless-stopped
+    volumes:
+      # Mount the Docker socket to inspect other containers
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      # Mount the volume we want to back up (from the redis service)
+      - redis_data:/volume/redis_data:ro
+      # Mount a local path to store the backup archives
+      - /opt/redis-memory/backups:/backup
+    environment:
+      # Back up the 'redis_data' volume from the 'redis-memory-redis' container
+      - BACKUP_SOURCES=/volume/redis_data
+      # Run the backup every day at 3:00 AM
+      - BACKUP_CRON_EXPRESSION=0 3 * * *
+      # Keep the last 7 daily backups
+      - BACKUP_RETENTION_DAYS=7
+      # Use tar.gz compression
+      - BACKUP_COMPRESSION=GZIP
+      - BACKUP_FILENAME=redis-backup-%Y-%m-%d_%H-%M-%S.tar.gz
+    depends_on:
+      - redis
     networks:
       - redis_memory_net
 

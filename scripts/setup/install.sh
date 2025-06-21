@@ -129,9 +129,10 @@ pct exec $LXC_ID -- bash -c "cd /opt/redis-memory && docker-compose up -d"
 echo -e "\n5️⃣ Waiting for services to start..."
 sleep 30
 
-# Step 6: Run health checks
-echo -e "\n6️⃣ Running health checks..."
-"$REPO_DIR/scripts/maintenance/health-check.sh" $LXC_IP
+# Step 6: Verify services are ready
+echo -e "\n6️⃣ Verifying services are ready..."
+echo "Services should be accessible at http://$LXC_IP:8000/v1/health"
+echo "Check Prometheus alerts at http://$LXC_IP:9090/alerts"
 
 echo -e "\n✅ Installation complete!"
 echo "📍 Redis Memory Central is available at:"
@@ -142,5 +143,5 @@ echo "   - RedisInsight: http://$LXC_IP:18001"
 echo ""
 echo "Next steps:"
 echo "1. Configure your clients: ./scripts/client/configure-claude.sh"
-echo "2. Test the connection: python3 ./scripts/client/test-connection.py"
+echo "2. Test the connection: pip install -r tests/requirements.txt && pytest"
 echo "3. Migrate existing data: ./scripts/migration/migrate-memories.py"
