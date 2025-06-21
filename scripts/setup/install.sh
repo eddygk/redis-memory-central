@@ -55,7 +55,11 @@ check_proxmox() {
         echo "✅ Proxmox VE environment detected"
         return 0
     else
-        echo "⚠️  Warning: Only $indicators Proxmox indicator(s) found"
+        if [ $indicators -eq 1 ]; then
+            echo "⚠️  Warning: Only $indicators Proxmox indicator found"
+        else
+            echo "⚠️  Warning: Only $indicators Proxmox indicators found"
+        fi
         echo "   Missing indicators:"
         for reason in "${reasons[@]}"; do
             echo "     - $reason"
