@@ -282,7 +282,7 @@ ip link set vmbr0.100 up
 
 ### Installation Script Fails
 
-If the installation script fails with "This script must be run on a Proxmox host" error:
+If the installation script fails with "'pct' command not available" or Proxmox detection errors:
 
 1. **Check Proxmox Installation**: Verify that Proxmox VE is properly installed:
    ```bash
