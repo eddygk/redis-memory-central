@@ -189,49 +189,6 @@
           }
         dest: /etc/logrotate.d/redis-memory
     
-    # Backup Script
-    - name: Create backup script
-      copy:
-        content: |
-          #!/bin/bash
-          set -euo pipefail
-          
-          BACKUP_DIR="/opt/redis-memory/backups"
-          TIMESTAMP=$(date +%Y%m%d_%H%M%S)
-          BACKUP_FILE="$BACKUP_DIR/redis-memory-backup-$TIMESTAMP.tar.gz"
-          
-          # Create Redis dump
-          docker exec redis-memory-redis redis-cli BGSAVE
-          sleep 5
-          
-          # Wait for dump to complete
-          while [ $(docker exec redis-memory-redis redis-cli LASTSAVE) -eq $(docker exec redis-memory-redis redis-cli LASTSAVE) ]; do
-              sleep 1
-          done
-          
-          # Create backup archive
-          tar -czf "$BACKUP_FILE" \
-              -C /opt/redis-memory \
-              data configs docker-compose.yml .env
-          
-          # Cleanup old backups (keep last 7)
-          find "$BACKUP_DIR" -name "redis-memory-backup-*.tar.gz" -mtime +7 -delete
-          
-          echo "Backup completed: $BACKUP_FILE"
-        dest: /opt/redis-memory/backup.sh
-        owner: redis-memory
-        group: redis-memory
-        mode: '0755'
-    
-    # Cron Jobs
-    - name: Setup backup cron job
-      cron:
-        name: "Redis Memory Backup"
-        minute: "0"
-        hour: "2"
-        job: "/opt/redis-memory/backup.sh >> /var/log/redis-memory/backup.log 2>&1"
-        user: redis-memory
-    
     # Environment File
     - name: Create environment template
       copy:
