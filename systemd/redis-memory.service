@@ -1,0 +1,60 @@
+[Unit]
+Description=Redis Memory Central Server
+Documentation=https://github.com/eddygk/redis-memory-central
+After=docker.service network-online.target
+Requires=docker.service
+Wants=network-online.target
+
+[Service]
+Type=forking
+User=redis-memory
+Group=redis-memory
+WorkingDirectory=/opt/redis-memory
+
+# Environment
+EnvironmentFile=-/etc/redis-memory/redis-memory.env
+Environment="COMPOSE_PROJECT_NAME=redis-memory"
+
+# Pre-start checks
+ExecStartPre=/usr/bin/docker compose -f docker-compose.yml config -q
+ExecStartPre=/usr/bin/docker compose -f docker-compose.yml pull -q
+
+# Start services
+ExecStart=/usr/bin/docker compose -f docker-compose.yml up -d
+
+# Health check
+ExecStartPost=/bin/sleep 10
+ExecStartPost=/usr/bin/docker compose -f docker-compose.yml ps
+
+# Stop services
+ExecStop=/usr/bin/docker compose -f docker-compose.yml down
+
+# Reload
+ExecReload=/usr/bin/docker compose -f docker-compose.yml restart
+
+# Restart policy
+Restart=always
+RestartSec=30
+StartLimitInterval=200
+StartLimitBurst=5
+
+# Security
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/opt/redis-memory /var/log/redis-memory
+
+# Resource limits
+LimitNOFILE=65536
+LimitNPROC=4096
+MemoryMax=8G
+CPUQuota=400%
+
+# Logging
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=redis-memory
+
+[Install]
+WantedBy=multi-user.target
