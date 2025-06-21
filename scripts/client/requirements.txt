@@ -1,0 +1,5 @@
+# Client script dependencies
+httpx==0.25.2
+redis==5.0.1
+rich==13.7.0
+aiofiles==23.2.1

@@ -1,0 +1,7 @@
+# Python dependencies for client scripts
+httpx==0.25.2
+redis==5.0.1
+rich==13.7.0
+aiofiles==23.2.1
+click==8.1.7
+python-dotenv==1.0.0
