@@ -46,14 +46,20 @@ check_proxmox() {
     if [ "$pct_available" = false ]; then
         echo "❌ This script requires the 'pct' command which is not available"
         echo "   This script is designed to run on a Proxmox VE host"
-        echo "   Missing indicators: ${reasons[*]}"
+        echo "   Missing indicators:"
+        for reason in "${reasons[@]}"; do
+            echo "     - $reason"
+        done
         return 1
     elif [ $indicators -ge 2 ]; then
         echo "✅ Proxmox VE environment detected"
         return 0
     else
         echo "⚠️  Warning: Only $indicators Proxmox indicator(s) found"
-        echo "   Missing indicators: ${reasons[*]}"
+        echo "   Missing indicators:"
+        for reason in "${reasons[@]}"; do
+            echo "     - $reason"
+        done
         echo "   Continuing since 'pct' command is available..."
         return 0
     fi
