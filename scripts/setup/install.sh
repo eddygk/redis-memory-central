@@ -43,7 +43,7 @@ check_proxmox() {
     fi
     
     # Need at least 2 indicators for confidence, but pct is mandatory
-    if ! command -v pct >/dev/null 2>&1; then
+    if [ "$pct_available" = false ]; then
         echo "❌ This script requires the 'pct' command which is not available"
         echo "   This script is designed to run on a Proxmox VE host"
         echo "   Missing indicators: ${reasons[*]}"
