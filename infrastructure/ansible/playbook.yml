@@ -1,0 +1,318 @@
+---
+# Redis Memory Central - Ansible Playbook
+# Configures LXC container with all required dependencies
+
+- name: Configure Redis Memory Central LXC Container
+  hosts: redis_memory_central
+  become: yes
+  vars:
+    docker_compose_version: "2.24.1"
+    node_exporter_version: "1.7.0"
+    timezone: "America/New_York"
+    
+  tasks:
+    # System Configuration
+    - name: Update apt cache
+      apt:
+        update_cache: yes
+        cache_valid_time: 3600
+    
+    - name: Install base packages
+      apt:
+        name:
+          - curl
+          - wget
+          - git
+          - vim
+          - htop
+          - net-tools
+          - ca-certificates
+          - gnupg
+          - lsb-release
+          - python3-pip
+          - python3-venv
+          - jq
+          - redis-tools
+          - ufw
+          - prometheus-node-exporter
+        state: present
+    
+    - name: Set timezone
+      timezone:
+        name: "{{ timezone }}"
+    
+    # Docker Installation
+    - name: Add Docker GPG key
+      apt_key:
+        url: https://download.docker.com/linux/ubuntu/gpg
+        state: present
+    
+    - name: Add Docker repository
+      apt_repository:
+        repo: "deb [arch=amd64] https://download.docker.com/linux/ubuntu {{ ansible_distribution_release }} stable"
+        state: present
+    
+    - name: Install Docker
+      apt:
+        name:
+          - docker-ce
+          - docker-ce-cli
+          - containerd.io
+          - docker-buildx-plugin
+          - docker-compose-plugin
+        state: present
+    
+    - name: Ensure Docker service is running
+      systemd:
+        name: docker
+        state: started
+        enabled: yes
+    
+    # User Configuration
+    - name: Create redis-memory user
+      user:
+        name: redis-memory
+        shell: /bin/bash
+        groups: docker
+        append: yes
+        create_home: yes
+        home: /home/redis-memory
+    
+    # Directory Structure
+    - name: Create directory structure
+      file:
+        path: "{{ item }}"
+        state: directory
+        owner: redis-memory
+        group: redis-memory
+        mode: '0755'
+      loop:
+        - /opt/redis-memory
+        - /opt/redis-memory/data
+        - /opt/redis-memory/logs
+        - /opt/redis-memory/backups
+        - /opt/redis-memory/configs
+        - /var/log/redis-memory
+        - /etc/redis-memory
+    
+    # Firewall Configuration
+    - name: Configure UFW defaults
+      ufw:
+        direction: "{{ item.direction }}"
+        policy: "{{ item.policy }}"
+      loop:
+        - { direction: 'incoming', policy: 'deny' }
+        - { direction: 'outgoing', policy: 'allow' }
+    
+    - name: Allow SSH from internal network
+      ufw:
+        rule: allow
+        port: 22
+        proto: tcp
+        src: 10.10.20.0/24
+    
+    - name: Allow Redis Memory services from internal network
+      ufw:
+        rule: allow
+        port: "{{ item }}"
+        proto: tcp
+        src: 10.10.20.0/24
+      loop:
+        - 8000   # API
+        - 9000   # MCP
+        - 16379  # Redis
+        - 18001  # RedisInsight
+        - 9100   # Node Exporter
+    
+    - name: Enable UFW
+      ufw:
+        state: enabled
+    
+    # System Tuning
+    - name: Configure sysctl for Redis
+      sysctl:
+        name: "{{ item.name }}"
+        value: "{{ item.value }}"
+        state: present
+        reload: yes
+      loop:
+        - { name: 'vm.overcommit_memory', value: '1' }
+        - { name: 'net.core.somaxconn', value: '1024' }
+        - { name: 'net.ipv4.tcp_max_syn_backlog', value: '1024' }
+    
+    - name: Disable Transparent Huge Pages
+      shell: |
+        echo never > /sys/kernel/mm/transparent_hugepage/enabled
+        echo never > /sys/kernel/mm/transparent_hugepage/defrag
+      changed_when: false
+    
+    - name: Make THP settings persistent
+      copy:
+        content: |
+          #!/bin/sh
+          echo never > /sys/kernel/mm/transparent_hugepage/enabled
+          echo never > /sys/kernel/mm/transparent_hugepage/defrag
+        dest: /etc/rc.local
+        mode: '0755'
+    
+    # Monitoring Setup
+    - name: Configure Prometheus Node Exporter
+      copy:
+        content: |
+          NODE_EXPORTER_OPTS="--web.listen-address=:9100 \
+            --collector.filesystem.ignored-mount-points=^/(dev|proc|sys|var/lib/docker/.+)($|/) \
+            --collector.filesystem.ignored-fs-types=^(tmpfs|fuse.lxcfs|squashfs)$"
+        dest: /etc/default/prometheus-node-exporter
+    
+    - name: Restart node exporter
+      systemd:
+        name: prometheus-node-exporter
+        state: restarted
+        enabled: yes
+    
+    # Logrotate Configuration
+    - name: Configure logrotate for Redis Memory
+      copy:
+        content: |
+          /var/log/redis-memory/*.log {
+              daily
+              rotate 7
+              compress
+              delaycompress
+              missingok
+              notifempty
+              create 0644 redis-memory redis-memory
+              sharedscripts
+              postrotate
+                  docker exec redis-memory-api kill -USR1 1
+              endscript
+          }
+        dest: /etc/logrotate.d/redis-memory
+    
+    # Backup Script
+    - name: Create backup script
+      copy:
+        content: |
+          #!/bin/bash
+          set -euo pipefail
+          
+          BACKUP_DIR="/opt/redis-memory/backups"
+          TIMESTAMP=$(date +%Y%m%d_%H%M%S)
+          BACKUP_FILE="$BACKUP_DIR/redis-memory-backup-$TIMESTAMP.tar.gz"
+          
+          # Create Redis dump
+          docker exec redis-memory-redis redis-cli BGSAVE
+          sleep 5
+          
+          # Wait for dump to complete
+          while [ $(docker exec redis-memory-redis redis-cli LASTSAVE) -eq $(docker exec redis-memory-redis redis-cli LASTSAVE) ]; do
+              sleep 1
+          done
+          
+          # Create backup archive
+          tar -czf "$BACKUP_FILE" \
+              -C /opt/redis-memory \
+              data configs docker-compose.yml .env
+          
+          # Cleanup old backups (keep last 7)
+          find "$BACKUP_DIR" -name "redis-memory-backup-*.tar.gz" -mtime +7 -delete
+          
+          echo "Backup completed: $BACKUP_FILE"
+        dest: /opt/redis-memory/backup.sh
+        owner: redis-memory
+        group: redis-memory
+        mode: '0755'
+    
+    # Cron Jobs
+    - name: Setup backup cron job
+      cron:
+        name: "Redis Memory Backup"
+        minute: "0"
+        hour: "2"
+        job: "/opt/redis-memory/backup.sh >> /var/log/redis-memory/backup.log 2>&1"
+        user: redis-memory
+    
+    # Environment File
+    - name: Create environment template
+      copy:
+        content: |
+          # Redis Memory Central Configuration
+          # Generated by Ansible
+          
+          # Network
+          REDIS_URL=redis://redis:6379
+          API_URL=http://localhost:8000
+          
+          # Features
+          LONG_TERM_MEMORY=True
+          WINDOW_SIZE=20
+          ENABLE_TOPIC_EXTRACTION=True
+          ENABLE_NER=True
+          
+          # Models
+          GENERATION_MODEL=gpt-4o-mini
+          EMBEDDING_MODEL=text-embedding-3-small
+          
+          # Security
+          DISABLE_AUTH=true
+          
+          # Performance
+          WORKER_CONCURRENCY=2
+          
+          # Add your API keys here:
+          # OPENAI_API_KEY=
+          # ANTHROPIC_API_KEY=
+        dest: /opt/redis-memory/.env.template
+        owner: redis-memory
+        group: redis-memory
+        mode: '0600'
+    
+    # MOTD
+    - name: Create custom MOTD
+      copy:
+        content: |
+          #!/bin/sh
+          echo "===================================="
+          echo " Redis Memory Central Server"
+          echo " IP: 10.10.20.85"
+          echo "===================================="
+          echo " Services:"
+          echo " - API:         http://$(hostname -I | cut -d' ' -f1):8000"
+          echo " - MCP:         http://$(hostname -I | cut -d' ' -f1):9000"
+          echo " - Redis:       redis://$(hostname -I | cut -d' ' -f1):16379"
+          echo " - RedisInsight: http://$(hostname -I | cut -d' ' -f1):18001"
+          echo "===================================="
+          echo " Logs: /var/log/redis-memory/"
+          echo " Data: /opt/redis-memory/data/"
+          echo "===================================="
+        dest: /etc/update-motd.d/50-redis-memory
+        mode: '0755'
+    
+    # Final message
+    - name: Display completion message
+      debug:
+        msg: |
+          Redis Memory Central LXC container configured successfully!
+          
+          Next steps:
+          1. Copy your .env file to /opt/redis-memory/.env
+          2. Deploy Docker containers with docker-compose
+          3. Run health checks
+          
+          Access points:
+          - API: http://{{ ansible_host }}:8000
+          - MCP: http://{{ ansible_host }}:9000
+          - Redis: redis://{{ ansible_host }}:16379
+          - RedisInsight: http://{{ ansible_host }}:18001
+
+# Handlers
+handlers:
+  - name: restart docker
+    systemd:
+      name: docker
+      state: restarted
+      
+  - name: restart ufw
+    systemd:
+      name: ufw
+      state: restarted
