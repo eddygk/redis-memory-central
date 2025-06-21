@@ -280,6 +280,35 @@ ip link set vmbr0.100 up
 
 ## Troubleshooting
 
+### Installation Script Fails
+
+If the installation script fails with "'pct' command not available" or Proxmox detection errors:
+
+1. **Check Proxmox Installation**: Verify that Proxmox VE is properly installed:
+   ```bash
+   # Check if pct command is available (required)
+   which pct
+   
+   # Check Proxmox version
+   pveversion
+   
+   # Check if this is a Proxmox node
+   pvesh get /nodes
+   ```
+
+2. **Bare-metal Proxmox**: On some bare-metal installations, `/etc/pve/version` might not exist. The script will continue if the `pct` command is available.
+
+3. **Run with verbose output**: Check what indicators are missing:
+   ```bash
+   bash -x ./scripts/setup/install.sh
+   ```
+
+The script checks for multiple Proxmox indicators:
+- `/etc/pve/version` file
+- `pct` command availability (mandatory)
+- Proxmox VE perl modules
+- `proxmox-ve` package
+
 ### Container Won't Start
 
 Check LXC logs:
