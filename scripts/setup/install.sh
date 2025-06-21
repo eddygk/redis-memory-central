@@ -20,7 +20,7 @@ check_proxmox() {
     fi
     
     # Check for essential pct command (most important since script uses it)
-    pct_available=false
+    local pct_available=false
     if command -v pct >/dev/null 2>&1; then
         pct_available=true
         indicators=$((indicators + 1))
