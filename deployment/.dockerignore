@@ -1,0 +1,38 @@
+# Git
+.git
+.gitignore
+
+# Documentation
+*.md
+docs/
+
+# Scripts
+scripts/
+
+# Terraform
+infrastructure/
+
+# Tests
+tests/
+*.test.*
+
+# Environment
+.env
+.env.*
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+logs/
+
+# Temporary
+*.tmp
+tmp/
+temp/
