@@ -45,3 +45,9 @@ variable "gateway" {
   type        = string
   default     = "10.10.20.1"
 }
+
+variable "vlan_tag" {
+  description = "VLAN tag for network interface (leave empty for no VLAN)"
+  type        = number
+  default     = 20
+}

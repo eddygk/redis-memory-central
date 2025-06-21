@@ -36,7 +36,11 @@ resource "proxmox_lxc" "redis_memory_server" {
     bridge = "vmbr0"
     ip     = "10.10.20.85/24"
     gw     = var.gateway
+    tag    = var.vlan_tag
   }
+
+  # DNS Configuration
+  nameserver = var.gateway
 
   features {
     nesting = true

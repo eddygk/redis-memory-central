@@ -8,6 +8,7 @@ proxmox_node = "pve"  # Your Proxmox node name
 lxc_template = "local:vztmpl/ubuntu-22.04-standard_22.04-1_amd64.tar.zst"
 storage_pool = "local-lvm"
 gateway = "10.10.20.1"
+vlan_tag = 20  # VLAN tag for network interface
 
 # Security
 proxmox_tls_insecure = true  # Set to false if using valid certificates
