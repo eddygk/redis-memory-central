@@ -128,7 +128,18 @@ services:
     networks:
       - redis_memory_net
 
-  # Optional monitoring
+  # Add this new service for Redis metrics
+  redis-exporter:
+    image: oliver006/redis_exporter:latest
+    container_name: redis-memory-exporter
+    restart: unless-stopped
+    depends_on:
+      - redis
+    environment:
+      - REDIS_ADDR=redis:6379
+    networks:
+      - redis_memory_net
+
   prometheus:
     image: prom/prometheus:latest
     container_name: redis-memory-prometheus
@@ -137,6 +148,7 @@ services:
       - "9090:9090"
     volumes:
       - ./configs/prometheus.yml:/etc/prometheus/prometheus.yml
+      - ./configs/alerts.yml:/etc/prometheus/alerts.yml # Add this line
       - prometheus_data:/prometheus
     command:
       - '--config.file=/etc/prometheus/prometheus.yml'
