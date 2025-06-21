@@ -34,7 +34,7 @@ That's it! Your centralized Redis Memory Server is now running at `http://10.10.
 ## 🏗️ Architecture
 
 ```
-Your LAN (10.10.20.0/24)
+Your LAN (10.10.20.0/24) - VLAN 20
 ├── Proxmox Host
 │   ├── LXC: Redis Memory (10.10.20.85)
 │   │   ├── Redis Stack (Port 16379)

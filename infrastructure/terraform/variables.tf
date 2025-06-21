@@ -19,7 +19,7 @@ variable "proxmox_password" {
 variable "proxmox_node" {
   description = "Proxmox node name"
   type        = string
-  default     = "pve"
+  default     = "node1"
 }
 
 variable "proxmox_tls_insecure" {
@@ -31,7 +31,7 @@ variable "proxmox_tls_insecure" {
 variable "lxc_template" {
   description = "LXC template to use"
   type        = string
-  default     = "local:vztmpl/ubuntu-22.04-standard_22.04-1_amd64.tar.zst"
+  default     = "local:vztmpl/ubuntu-24.04-standard_24.04-1_amd64.tar.zst"
 }
 
 variable "storage_pool" {
@@ -44,4 +44,10 @@ variable "gateway" {
   description = "Network gateway"
   type        = string
   default     = "10.10.20.1"
+}
+
+variable "vlan_tag" {
+  description = "VLAN tag for network interface (leave empty for no VLAN)"
+  type        = number
+  default     = 20
 }

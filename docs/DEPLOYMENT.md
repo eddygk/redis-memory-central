@@ -145,11 +145,11 @@ If you prefer manual deployment:
 
 ```bash
 # Create container
-pct create 850 local:vztmpl/ubuntu-22.04-standard_22.04-1_amd64.tar.zst \
+pct create 850 local:vztmpl/ubuntu-24.04-standard_24.04-1_amd64.tar.zst \
   --hostname redis-memory-central \
   --memory 8192 \
   --cores 4 \
-  --net0 name=eth0,bridge=vmbr0,ip=10.10.20.85/24,gw=10.10.20.1 \
+  --net0 name=eth0,bridge=vmbr0,ip=10.10.20.85/24,gw=10.10.20.1,tag=20 \
   --storage local-lvm \
   --rootfs local-lvm:100 \
   --unprivileged 1 \
@@ -271,10 +271,12 @@ server {
 Create dedicated VLAN:
 
 ```bash
-# On Proxmox host
+# On Proxmox host - Example for VLAN 100 (if different from default VLAN 20)
 ip link add link vmbr0 name vmbr0.100 type vlan id 100
 ip link set vmbr0.100 up
 ```
+
+**Note**: The default configuration now uses VLAN 20. If you need a different VLAN, update the `vlan_tag` variable in your terraform.tfvars file.
 
 ## Troubleshooting
 
