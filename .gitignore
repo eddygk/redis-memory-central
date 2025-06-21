@@ -1,0 +1,58 @@
+# Environment files
+.env
+.env.local
+.env.*.local
+
+# Terraform
+*.tfstate
+*.tfstate.*
+.terraform/
+.terraform.lock.hcl
+*.tfvars
+!terraform.tfvars.example
+
+# Ansible
+*.retry
+inventory.ini
+!inventory.ini.example
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+venv/
+ENV/
+.venv
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
+
+# Logs
+*.log
+logs/
+
+# Backups
+*.backup
+*.bak
+backups/
+
+# Test outputs
+.pytest_cache/
+htmlcov/
+.coverage
+*.cover
+
+# Docker
+.docker/
+
+# Temporary files
+*.tmp
+*.temp
+tmp/
+temp/
