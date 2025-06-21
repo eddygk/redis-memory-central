@@ -42,7 +42,7 @@ check_proxmox() {
         reasons+=("'proxmox-ve' package not installed")
     fi
     
-    # Need at least 2 indicators for confidence, but pct is mandatory
+    # Need at least $MIN_INDICATORS indicators for confidence, but pct is mandatory
     if [ "$pct_available" = false ]; then
         echo "❌ This script requires the 'pct' command which is not available"
         echo "   This script is designed to run on a Proxmox VE host"
