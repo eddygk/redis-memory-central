@@ -26,7 +26,11 @@ nano .env  # Add your API keys
 ./scripts/setup/install.sh
 
 # Test the deployment
-python3 scripts/client/test-connection.py
+# Install test dependencies
+pip install -r tests/requirements.txt
+
+# Run the integration test suite
+pytest
 ```
 
 That's it! Your centralized Redis Memory Server is now running at `http://10.10.20.85`
@@ -161,8 +165,8 @@ python3 scripts/migration/migrate-memories.py
 
 ### Quick Checks
 ```bash
-# Test all services
-./scripts/maintenance/health-check.sh
+# Check all services via Prometheus
+# Visit http://10.10.20.85:9090 and view the "Alerts" tab
 
 # View logs
 ssh redis-memory@10.10.20.85
@@ -255,7 +259,7 @@ After deployment, you should have:
 - [ ] LXC container running at 10.10.20.85
 - [ ] All services healthy (check http://10.10.20.85:8000/v1/health)
 - [ ] Claude Desktop configured on all clients
-- [ ] Successful test run (`test-connection.py`)
+- [ ] Successful test run (`pytest`)
 - [ ] Data migrated from local instances
 - [ ] Automated backups configured
 - [ ] Monitoring alerts set up
