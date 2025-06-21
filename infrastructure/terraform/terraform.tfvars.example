@@ -2,10 +2,10 @@
 proxmox_api_url = "https://your-proxmox-host:8006/api2/json"
 proxmox_user = "root@pam"
 proxmox_password = "your-password-here"
-proxmox_node = "pve"  # Your Proxmox node name
+proxmox_node = "node1"  # Your Proxmox node name
 
 # LXC Configuration
-lxc_template = "local:vztmpl/ubuntu-22.04-standard_22.04-1_amd64.tar.zst"
+lxc_template = "local:vztmpl/ubuntu-24.04-standard_24.04-1_amd64.tar.zst"
 storage_pool = "local-lvm"
 gateway = "10.10.20.1"
 vlan_tag = 20  # VLAN tag for network interface

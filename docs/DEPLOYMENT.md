@@ -145,7 +145,7 @@ If you prefer manual deployment:
 
 ```bash
 # Create container
-pct create 850 local:vztmpl/ubuntu-22.04-standard_22.04-1_amd64.tar.zst \
+pct create 850 local:vztmpl/ubuntu-24.04-standard_24.04-1_amd64.tar.zst \
   --hostname redis-memory-central \
   --memory 8192 \
   --cores 4 \
