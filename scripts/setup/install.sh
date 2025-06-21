@@ -7,9 +7,58 @@ set -euo pipefail
 echo "🚀 Redis Memory Central - Installation Script"
 echo "==========================================="
 
+# Function to check if running on Proxmox
+check_proxmox() {
+    local indicators=0
+    local reasons=()
+    
+    # Check for /etc/pve/version (traditional check)
+    if [ -f /etc/pve/version ]; then
+        indicators=$((indicators + 1))
+    else
+        reasons+=("'/etc/pve/version' not found")
+    fi
+    
+    # Check for essential pct command (most important since script uses it)
+    if command -v pct >/dev/null 2>&1; then
+        indicators=$((indicators + 1))
+    else
+        reasons+=("'pct' command not available")
+    fi
+    
+    # Check for Proxmox VE perl modules
+    if [ -d /usr/share/perl5/PVE ]; then
+        indicators=$((indicators + 1))
+    else
+        reasons+=("Proxmox VE perl modules not found")
+    fi
+    
+    # Check for proxmox-ve package
+    if dpkg -l proxmox-ve >/dev/null 2>&1; then
+        indicators=$((indicators + 1))
+    else
+        reasons+=("'proxmox-ve' package not installed")
+    fi
+    
+    # Need at least 2 indicators for confidence, but pct is mandatory
+    if ! command -v pct >/dev/null 2>&1; then
+        echo "❌ This script requires the 'pct' command which is not available"
+        echo "   This script is designed to run on a Proxmox VE host"
+        echo "   Missing indicators: ${reasons[*]}"
+        return 1
+    elif [ $indicators -ge 2 ]; then
+        echo "✅ Proxmox VE environment detected"
+        return 0
+    else
+        echo "⚠️  Warning: Only $indicators Proxmox indicator(s) found"
+        echo "   Missing indicators: ${reasons[*]}"
+        echo "   Continuing since 'pct' command is available..."
+        return 0
+    fi
+}
+
 # Check if running on Proxmox
-if [ ! -f /etc/pve/version ]; then
-    echo "❌ This script must be run on a Proxmox host"
+if ! check_proxmox; then
     exit 1
 fi
 
