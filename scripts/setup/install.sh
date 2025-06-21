@@ -36,7 +36,7 @@ check_proxmox() {
     fi
     
     # Check for proxmox-ve package
-    if dpkg-query -W -f='${Status}' proxmox-ve 2>/dev/null | grep -q "install ok installed"; then
+    if dpkg -s proxmox-ve >/dev/null 2>&1; then
         indicators=$((indicators + 1))
     else
         reasons+=("'proxmox-ve' package not installed")
